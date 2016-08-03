@@ -6,44 +6,34 @@ import datetime
 today = datetime.datetime.now()
 
 ## Get Date for the Gamma Msg
+## This script should be run with two command line arguments - 
+## First the Date in YYYYMMDD format and the Gamma Flight Mission Number.
+## For example:  python gammaShapefile.py 20170215 23
+
 date = str(sys.argv[1])
 svy = str(sys.argv[2])
-
-if date is None:
-    date = today.strftime("%Y%m%d")
 
 # Change the working directory to where the gamma message is copied to.
 os.chdir('/net/home/scarter/SNODAS_Development/temp')
 
-# List of attribute names for the formatted gamma message.
-header = ['FLINE', 'FDATE', 'FTIME', 'DIR', 'HALT', 'HTEMP', 'CODE', 'PALT',
-    'SCP', 'PLANE', 'RACK', 'CRYSTAL', 'REMS', 'WSWE', 'KSWE', 'TSWE', 'GSWE',
-    'SWE35', 'WSM', 'MSM' , 'KN', 'TN', 'GCN', 'GCAS', 'GCGS', 'GCDR', 'GCUR',
-    'LR', 'KR', 'UR', 'TR', 'CDR', 'CUR', 'KCENT', 'AM', 'ALT', 'PSI', 'TEMP',
-    'ALTC', 'PRESC', 'TEMPC', 'ACQTIM', 'LTD', 'LTU', 'ErrorFlg']
+''' This function re-writes the gamma message with a header '''
 
-# Find the gamma msg (a bit of a hack because message formatting is airframe dependent
-for i in os.listdir(os.getcwd()):
-    if date[2:]+'a' in i:
-        gammaMSG = i
-        print(gammaMSG)
+def makeFormattedGamma(date):
+    # List of attribute names for the formatted gamma message.
+    header = ['FLINE', 'FDATE', 'FTIME', 'DIR', 'HALT', 'HTEMP', 'CODE', 'PALT',
+        'SCP', 'PLANE', 'RACK', 'CRYSTAL', 'REMS', 'WSWE', 'KSWE', 'TSWE', 'GSWE',
+        'SWE35', 'WSM', 'MSM' , 'KN', 'TN', 'GCN', 'GCAS', 'GCGS', 'GCDR', 'GCUR',
+        'LR', 'KR', 'UR', 'TR', 'CDR', 'CUR', 'KCENT', 'AM', 'ALT', 'PSI', 'TEMP',
+        'ALTC', 'PRESC', 'TEMPC', 'ACQTIM', 'LTD', 'LTU', 'ErrorFlg']
 
-# where the flight names and location look-up table is maintained
-points = '/net/home/scarter/SNODAS_Development/scripts/flightLines.csv'
+    # Find the gamma msg (a bit of a hack because message formatting is airframe dependent
+    for i in os.listdir(os.getcwd()):
+        if date[2:]+'a' in i:
+            gammaMSG = i
 
-# store flight names and location look-up table as a dictionary
-pointDict = {}
-flinePoints = csv.reader(open(points, 'r'), delimiter =  '|')
-for line in flinePoints:
-    key = line[0]
-    values = line[1:]
-    pointDict[key] = values
+    # where the new formatted message will be kept
+    newGammaMsg = os.path.join(os.getcwd(), 'formattedGammaMsg.csv')
 
-# where the new formatted message will be kept
-newGammaMsg = os.path.join(os.getcwd(), 'formattedGammaMsg.csv')
-
-# This function re-writes the gamma message with a header
-def makeFormattedGamma(gammaMSG):
     with open(newGammaMsg, 'w') as outFile:
         writer = csv.writer(outFile, delimiter = '|')
         writer.writerow(header)
@@ -51,23 +41,41 @@ def makeFormattedGamma(gammaMSG):
             reader = csv.reader(inFile, delimiter = '|')
             for row in reader:
                 writer.writerow(row)
+    
+    return newGammaMsg, header
 
-# This function converts the newly formatted gamma message into a shapefile
+
+''' This function converts the newly formatted gamma message into a shapefile'''
+
 def shapeFileMaker(svy):
-	# Shapefile Name
+    # Shapefile Name
     shp = 'gamma_points_' + date + '_svy' + str(svy) + '.shp'
-    if os.path.isfile(os.path.join(os.getcwd(), shp)) == True:
-        os.remove(os.path.join(os.getcwd(), shp))
+    fileDir = '/net/home/scarter/SNODAS_Development/results'
+    # If a shapefile is present with same name and mission number, delete it:
+    if os.path.isfile(os.path.join(fileDir, shp)) == True:
+        os.remove(os.path.join(fileDir, shp))
 
     # Dictionaries to access values
-    valuesReader = csv.DictReader(open(newGammaMsg, 'r'), delimiter = '|')
+    # where the flight names and location look-up table is maintained
 
+    values, header = makeFormattedGamma(date)
+
+    valuesReader = csv.DictReader(open(values, 'r'), delimiter = '|')
+
+    # store flight names and location look-up table as a dictionary
+    points = '/net/home/scarter/SNODAS_Development/scripts/flightLines.csv'
+    pointDict = {}
+    flinePoints = csv.reader(open(points, 'r'), delimiter =  '|')
+    for line in flinePoints:
+        key = line[0]
+        values = line[1:]
+        pointDict[key] = values
 
     # Set up the shapefile driver
     driver = ogr.GetDriverByName("ESRI Shapefile")
 
     # create the data source
-    data_source = driver.CreateDataSource(os.path.join(os.getcwd(), shp))
+    data_source = driver.CreateDataSource(os.path.join(fileDir, shp))
 
     # create the spatial reference, WGS84
     srs = osr.SpatialReference()
@@ -154,7 +162,6 @@ def shapeFileMaker(svy):
     data_source.Destroy()        
     
 def main():
-    makeFormattedGamma(gammaMSG)
     shapeFileMaker(svy)
     
 main()
