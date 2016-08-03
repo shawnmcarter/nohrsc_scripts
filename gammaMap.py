@@ -71,9 +71,9 @@ def convertToMeters(date):
     scale. processCalculation()
     del raw_swe
 
-    
     os.remove(os.path.join(inputDir,uri))
-
+    
+    
 def makeMapTitle(date, survey):
     expression = """<html>
 <head>
@@ -90,19 +90,55 @@ def makeMapTitle(date, survey):
 
 def exportPDF():
     # Location of the saved QGIS project and Composer Template
+    # Clear the QGIS Canvas
+    QgsMapLayerRegistry.instance().removeAllMapLayers()
+    iface.mapCanvas().refresh()
     project_path = os.path.join(SWEdir,'swe.qgs')
     template_path = os.path.join(SWEdir,'print.qpt')
 
     # Set output DPI
     dpi = 300
 
+    # Load Gamma Flight Lines and Apply Appropriate Color Scheme
+    gamma_path = os.path.join(dailyDir, 'gamma_points.shp')
+    flines_path = os.path.join(bkgrndDir, 'flines.shp')
+    gamma = QgsVectorLayer(gamma_path, 'Gamma Points', 'ogr')
+    flines = QgsVectorLayer(flines_path, 'Flight Lines', 'ogr')
+    
+    # Put points and Flight Lines on Canvas
+    QgsMapLayerRegistry.instance().addMapLayers([gamma,flines])
+    
+    # Execute the Join Function
+    flineName = 'NAME'
+    gammaName = 'FLINE'
+    joinObject = QgsVectorJoinInfo()
+    joinObject.joinLayerId = gamma.id()
+    joinObject.joinFieldName = gammaName
+    joinObject.targetFieldName = flineName
+    joinObject.memoryCache = True
+    flines.addJoin(joinObject)
+    
+    QgsVectorFileWriter.writeAsVectorFormat(flines, os.path.join(bkgrndDir, 'FlinesJoined.shp'),  "utf-8", None, "ESRI Shapefile")
     canvas = QgsMapCanvas()
-    # Load the SWE Project
+    
+    # Clear the QGIS Canvas
+    QgsMapLayerRegistry.instance().removeAllMapLayers()
+    iface.mapCanvas().refresh
+    
+    # Load the SWE Project and Zoom to Gamma Flight Extent
     QgsProject.instance().read(QFileInfo(project_path))
-    time.sleep(5)
+    
+    layers = QgsMapLayerRegistry.instance().mapLayers()
+    for x in layers:
+        if 'gamma_points' in x:
+            layer = x
+    
+    iface.mapCanvas().setExtent(layers[layer].extent())
+    iface.mapCanvas().refresh()
+    time.sleep(15)
+    # Spawn Composer and Export the PDF
     bridge = QgsLayerTreeMapCanvasBridge(QgsProject.instance().layerTreeRoot(), canvas)
     bridge.setCanvasLayers()
-
     template_file = file(template_path)
     template_content = template_file.read()
     template_file.close()
@@ -124,3 +160,7 @@ date, survey = unZip()
 convertToMeters(date)
 makeMapTitle(date, survey)
 exportPDF()
+
+for i in os.listdir(inputDir):
+    if not '.zip' in i:
+        os.remove(os.path.join(inputDir, i))
