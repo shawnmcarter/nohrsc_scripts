@@ -30,3 +30,16 @@ This function simply re-writes the original Gamma Survey message to include head
 ### Function shapeFileMaker(svy)
 
 This function takes the newly formatted message and converts it into a point shapefile using GDAL Python bindings.  
+
+## gammaMap.py
+
+This python script must be run from within QGIS (>= 2.12).  Variables for file storage and manipulation are maintained on lines 13-17. 
+*  *SWEdir* should point to the root directory where your SNODAS-Gamma Map folders are located.  
+
+*  *bkgrndDir* should point to the folder where the background layers (DEM, Hillshading, Topographic Openness, and Border layers are maintained).  
+
+*  *inputDir* is where you copy the zipped archive created in the sweGIS.sh script.  
+
+*  *dailyDir* is where the script will save the unzipped files.  This is important because one of the first steps is to convert the SNODAS raster by multiplying by 0.001 (converting its units into meters).
+
+*  *mapDir* is where the output map is stored.  
