@@ -44,7 +44,7 @@ arcpy.AddMessage("Assimilation End Time: " + end_date + end_hour+'00Z\n\n')
 try:
     assimDir = 'C:/assimilation/nudging_layers/swe/' + end_date + '/'
     os.makedirs(assimDir)
-    arcpy.AddMessage('SWE Nudging Folder for ' + end_date + ' created.')
+    arcpy.AddMessage('SWE Nudging Folder for %s created.' % end_date)
     arcpy.AddMessage(assimDir)
 
 except:
@@ -61,7 +61,7 @@ def clearTheMap(layerName):
     for layer in layerName:
         for lyr in arcpy.mapping.ListLayers(mxd, layer, df):
             if arcpy.Exists(lyr):
-                arcpy.AddMessage('Removed ' + str(lyr) + ' from the map.')
+                arcpy.AddMessage('Removed %s layer from the map.' % str(lyr))
                 arcpy.mapping.RemoveLayer(df, lyr)
 
             else:
