@@ -43,3 +43,10 @@ This python script must be run from within QGIS (>= 2.12).  Variables for file s
 *  *dailyDir* is where the script will save the unzipped files.  This is important because one of the first steps is to convert the SNODAS raster by multiplying by 0.001 (converting its units into meters).
 
 *  *mapDir* is where the output map is stored.  
+
+## assim_startup_QGIS.py
+This python script is designed to be run from the [ScriptRunner plugin](http://spatialgalaxy.net/2013/03/18/new-version-of-the-qgis-script-runner-plugin/) for QGIS (versions >= 2.12).  To prepare and install this plugin, edit the source so that the directory location variables in the beginning of the assimStartup() class point to the folder structure on your computer.  Then import the script into the script runner plugin.  This script requires 5 command line arguments that should be used as below in the ScriptRunner plugin dialog:
+
+    start_date='YYYYMMDD', start_hour='HH', end_date='YYYYMMDD', end_hour='06', keep_old_files='no'
+    
+Be sure to enclose variable values in apostrophes and separate variables with commas.  
